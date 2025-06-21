@@ -28,6 +28,21 @@ export const registerUser = createAsyncThunk(
     return response.data;
   }
 );
+export const loginUser = createAsyncThunk(
+  "/auth/login",
+
+  async (formData) => {
+    const response = await axios.post(
+      "http://localhost:5000/api/auth/login",
+      formData,
+      {
+        withCredentials: true,
+      }
+    );
+
+    return response.data;
+  }
+);
 
 const authSlice = createSlice({
   name: 'auth',
@@ -39,6 +54,7 @@ const authSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    // Handle registration actions
     builder
       .addCase(registerUser.pending, (state) => {
         state.isLoading = true; // Set loading state to true when registration starts
@@ -55,6 +71,34 @@ const authSlice = createSlice({
         state.error = action.payload.error; // Store the error message
         state.isAuthenticated = false; // Ensure user is not authenticated on failure
         state.user = null; // Reset user data
+      })
+      .addCase(loginUser.pending, (state) => {
+        state.isLoading = true; // Set loading state to true when login starts
+      })
+      .addCase(loginUser.fulfilled, (state, action) => {
+        state.isLoading = false; // Set loading state to false when login is successful
+        state.isAuthenticated = true; // Set authenticated status to true
+        state.user = action.payload.checkUser; // Set user data
+        state.token = action.payload.token; // Set token
+        state.isAdmin = action.payload.checkUser?.role === 'admin'; // Set admin status
+      })
+      .addCase(loginUser.rejected, (state, action) => {
+        state.isLoading = false; // Set loading state to false when login fails
+        state.error = action.payload; // Store the error message
+        state.isAuthenticated = false; // Ensure user is not authenticated on failure
+        state.user = null; // Reset user data
+        state.token = null; // Reset token
+        state.isAdmin = false; // Reset admin status
+      })
+
+      // Handle logout action
+      .addCase('auth/logout', (state) => {
+        state.isAuthenticated = false; // Set authenticated status to false
+        state.user = null; // Reset user data
+        state.token = null; // Reset token
+        state.isAdmin = false; // Reset admin status
+        state.error = null; // Clear any error messages
+        state.loading = false; // Reset loading state
       });
   }
 });

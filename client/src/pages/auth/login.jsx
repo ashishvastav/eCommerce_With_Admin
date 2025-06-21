@@ -1,7 +1,11 @@
-import React from 'react'
+import React, { useState } from 'react'
 import CommonForm from '../../components/common/form';
 import { loginFormControl } from '@/components/config';
 import { Link } from 'react-router-dom';
+import { loginUser } from '../../../store/auth-slice';
+import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { toast } from "sonner";
 
 
 function AuthLogin() {
@@ -10,10 +14,35 @@ function AuthLogin() {
     password: '',
     rememberMe: true
   }
-  const [formData, setFormData] = React.useState(initialState)
-
+  const [formData, setFormData] = useState(initialState)
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
    const onSubmit = (e) => {
     e.preventDefault();
+    dispatch(loginUser(formData))
+      .then((response) => {
+        if(response?.payload?.success){
+          toast("🎉 Login successful!", {
+            description: "Welcome back!",
+            duration: 3000
+          });
+          console.log("Redux user after login:", response?.payload?.checkUser?.role);
+          if(response?.payload?.checkUser?.role === 'admin'){
+            navigate('/admin/dashboard');
+          } else {
+            navigate('/shop/home');
+          }
+        }
+        console.log("Login successful:", response);
+      })
+      .catch((error) => {
+        console.error("Login failed:", error);
+        toast("🚨 Error", {
+          description: "Login Failed: Invalid email or password. Please try again.",
+          duration: 3000,
+          variant: "destructive",
+        });
+      });
     console.log("Form submitted with data:", formData);
   }
   return (

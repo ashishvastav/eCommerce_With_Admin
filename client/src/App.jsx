@@ -3,7 +3,7 @@ import './index.css';
 import AuthLogin from './pages/auth/login'
 import AuthRegister from './pages/auth/register';
 import AuthLayout from './components/auth/layout';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, Navigate } from 'react-router-dom';
 import AdminLayout from './components/admin-view/layout';
 import AdminDashboard from './pages/admin-view/dashboard';
 import AdminProducts from './pages/admin-view/products';
@@ -18,18 +18,20 @@ import ShoppingCart from './pages/shopping-view/cart';
 import ShoppingAccount from './pages/shopping-view/account';
 import CheckAuth from './components/common/check-auth';
 import Unauthorized from './components/common/unauthorized';
+import { useSelector } from 'react-redux';
+import { selectIsAuthenticated, selectUser, selectIsLoading } from '../store/auth-slice';
 
 function App() {
- 
-  const isAuthenticated = false; // Replace with actual authentication logic
-  // const user = { role: 'user', name: 'Ashish' }; // Replace with actual user data
-  const user = null; // Replace with actual user data
-  const isLoading = false; // Replace with actual loading state
-  // Note: The above variables should be replaced with actual state management logic (e.g., Redux, Context API)
+  // Use Redux state for authentication and user
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const user = useSelector(selectUser);
+  const isLoading = useSelector(selectIsLoading);
 
   return (
     <div className='flex flex-col overflow-hidden bg-white'>
         <Routes>
+          {/* Default redirect from / to /shop/home */}
+          <Route path="/" element={<Navigate to="/shop/home" replace />} />
           {/* Define your routes here */}
           <Route path="/auth" element={
             <CheckAuth isAuthenticated={isAuthenticated} user={user} isLoading={isLoading}>

@@ -1,9 +1,10 @@
-
-
 //bcrypt
 const bcrypt = require('bcryptjs'); 
 const jwt = require('jsonwebtoken');
+const dotenv = require('dotenv');
+dotenv.config();
 
+const secret = process.env.JWT_SECRET;
 // register
 const User = require('../../models/User');
 
@@ -12,27 +13,19 @@ const registerUser = async (req, res) => {
 
     try {
         // Check if user already exists
-        let user = await User.findOne({ email });
+        let user = await User.findOne({ where: { email } });
         if (user) {
-            return res.status(400).json({ success: false, message: 'User already exists' });
+            return res.status(400).json({ success: false, message: 'Email already exists,Please try with different email' });
         }
-        // user = await User.findOne({ UserName });
-        // if (user) {
-        //     return res.status(400).json({ success: true, message: 'UserName already exists' });
-        // }
-        
-        const hashedPassword = await bcrypt.hash(password, 10);
-        // Create a new user
-        user = new User({
+        // Create a new user (password will be hashed by the model hook)
+        user = await User.create({
             email,
-            password: hashedPassword,
+            password,
             UserName
         });
 
-        await user.save();
-
         // Generate a JWT token
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        const token = jwt.sign({ id: user.id }, secret, {
             expiresIn: '1h'
         });
 
@@ -48,24 +41,38 @@ const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const user = await User.findOne({ email });
+        // Use Sequelize syntax
+        const user = await User.findOne({ where: { email } });
         if (!user) {
-            return res.status(404).json({ success: false, message: 'User not found' });
+            return res.status(404).json({ success: false, message: "User doesn't exist,Please Register first" });
         }
 
-        const isMatch = await user.comparePassword(password);
+        // Use instance method for password comparison if defined, else use bcrypt
+        let isMatch = false;
+        if (typeof user.comparePassword === 'function') {
+            isMatch = await user.comparePassword(password);
+        } else {
+            isMatch = await bcrypt.compare(password, user.password);
+        }
         if (!isMatch) {
             return res.status(400).json({ success: false, message: 'Invalid credentials' });
         }
 
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        // Use user.id for Sequelize
+        const token = jwt.sign({ id: user.id, role: user.role, email: user.email }, secret, {
             expiresIn: '1h'
         });
-
-        res.json({ success: true, message: 'Login successful', token });
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: false, // Use secure cookies in production
+        }).json({ success: true, message: 'Login successful', checkUser: {
+            email: user.email,
+            role: user.role,
+            id: user.id
+        }, token });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ success: false, message: 'Server error' });
+        res.status(500).json({ success: false, message: 'Login Failed, Server error 500' });
     }
 };
 
@@ -132,7 +139,7 @@ const authMiddleware = (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, secret);
         req.user = decoded;
         next();
     } catch (error) {

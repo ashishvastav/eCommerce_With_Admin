@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { registerFormControl } from '@/components/config';
 import { useDispatch } from 'react-redux';
 import { registerUser } from '../../../store/auth-slice/index';
-import { useSonner } from 'sonner';
+import { toast } from "sonner";
 
 
 function AuthRegister() {
@@ -18,27 +18,29 @@ function AuthRegister() {
   const [formData, setFormData] = useState(initialState)
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { toast } = useSonner();
+
    const onSubmit = (e) => {
     e.preventDefault();
     dispatch(registerUser(formData))
       .then((response) => {
         if(response?.payload?.success){
-          navigate('/auth/login'); // Redirect to login page on successful registration
-          toast("Event has been created", {
-          description: "Sunday, December 03, 2023 at 9:00 AM",
-          action: {
-            label: "Undo",
-            onClick: () => console.log("Undo"),
-          },
-        });
-          
-          
+          toast("🎉 Registration successful!", {
+            description: "You can now log in with your new account.",
+            duration: 3000
+          });
+          navigate('/auth/login');
         }
         console.log("Registration successful:", response);
       })
       .catch((error) => {
-        toast.error("Registration failed. Please try again.");
+        console.error("Registration failed:", error);
+        if(error){
+          toast("🚨 Error", {
+            description: "Email already exists,Please try with different email",
+            duration: 3000,
+            variant: "destructive",
+          });
+        }
       });
     console.log("Form submitted with data:", formData);
   }

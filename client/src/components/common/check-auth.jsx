@@ -1,6 +1,7 @@
 import React from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 
+
 function CheckAuth({isAuthenticated, user, children, isLoading}) {
   const location = useLocation();
 
@@ -11,7 +12,13 @@ function CheckAuth({isAuthenticated, user, children, isLoading}) {
 //    if (!isAuthenticated && !(location.pathname.includes('/login') || location.pathname.includes('/register'))) {
 //         return <Navigate to="/auth/login" state={{ from: location }} replace />
 //    }
+  //   if(!isAuthenticated) {
+  //   return <Navigate to="/shop/home" />
+  // }
    if (!isAuthenticated && (location.pathname.includes('/shop/checkout'))) {
+        return <Navigate to="/auth/login" state={{ from: location }} replace />
+   }
+   if (!isAuthenticated && (location.pathname.includes('/admin/dashboard') || location.pathname.includes('/admin/products') || location.pathname.includes('/admin/orders'))) {
         return <Navigate to="/auth/login" state={{ from: location }} replace />
    }
   
